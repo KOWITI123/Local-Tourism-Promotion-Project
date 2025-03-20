@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pori - Visitor Info</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .placeholder-image-large {
+            background-color: #757575;
+            width: 100%;
+            height: 600px;
+            position: relative;
+        }
+        .explore-section {
+            position: relative;
+            height: 300px;
+            margin-top: 0;
+            overflow: hidden;
+        }
+        .explore-section img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .explore-section .content-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        .content-section {
+            margin-top: 100px;
+        }
+        .perfect-stay-placeholder {
+            background-color: #D3D3D3;
+            width: 100%;
+            height: 400px;
+            position: relative;
+        }
+        .perfect-stay-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100px;
+            height: 100px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23A0A0A0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>') no-repeat center;
+            transform: translate(-50%, -50%);
+        }
+        .aspect-\[4\/3\] {
+            aspect-ratio: 4 / 3;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full bg-white shadow-md z-10">
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center">
+                <span class="text-yellow-400 text-2xl mr-4">🌞</span>
+                <span class="text-xl font-bold">Pori</span>
+            </div>
+            <div class="space-x-4">
+                <a href="index.html" class="text-gray-600 hover:text-gray-900">Home</a>
+                <a href="about.html" class="text-gray-600 hover:text-gray-900">About</a>
+                <a href="what_to_do.html" class="text-gray-600 hover:text-gray-900">What to do</a>
+                <a href="where_to_stay.html" class="text-gray-600 hover:text-gray-900">Where to stay</a>
+                <a href="where_to_eat.html" class="text-gray-600 hover:text-gray-900">Where to eat</a>
+                <a href="visitor_info.html" class="text-gray-600 hover:text-gray-900">Visitor info</a>
+                <a href="contact.html" class="text-gray-600 hover:text-gray-900">Contact</a>
+            </div>
+            <div>
+                <button class="text-gray-600 hover:text-gray-900">⋮</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Section 1: Visitor Info -->
+    <div class="explore-section">
+        <img src="../static/images/visitor-info-placeholder.jpeg" alt="Visitor Info" class="w-full h-full object-cover">
+        <div class="content-overlay">
+            <div class="p-6">
+                <h1 class="text-5xl font-bold">Visitor Information</h1>
+                <p class="text-xl mt-4">Everything you need to know for your trip to Kenya.</p>
+                <button class="mt-6 bg-orange-500 text-white px-6 py-2 rounded">Learn More</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Travel Essentials -->
+    <div class="content-section">
+        <div class="container mx-auto px-4 py-10">
+            <h2 class="text-4xl font-bold">Travel Essentials</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div class="bg-white p-4 rounded shadow">
+                    <details>
+                        <summary class="text-lg font-semibold text-gray-800 cursor-pointer">Visas</summary>
+                        <ul class="mt-2 text-gray-700 space-y-2 pl-4">
+                            <li>Kenya has implemented an Electronic Travel Authorization (eTA) system. Visitors must obtain an eTA before travelling.</li>
+                            <li>A valid passport with sufficient blank pages (typically at least six months of validity).</li>
+                            <li>Depending on nationality, there may have been visa requirements in the past, but the eTA has changed much of that. Always check the most up-to-date information.</li>
+                            <li>May be required to show proof of onward travel.</li>
+                            <li>For Kenyan Citizens, proof of citizenship (National ID or Passport).</li>
+                            <li>No visa or eTA requirements.</li>
+                            <li>Access to citizen/resident rates at national parks and attractions.</li>
+                        </ul>
+                    </details>
+                </div>
+                <div class="bg-white p-4 rounded shadow">
+                    <details>
+                        <summary class="text-lg font-semibold text-gray-800 cursor-pointer">Health</summary>
+                        <ul class="mt-2 text-gray-700 space-y-2 pl-4">
+                            <li>Yellow fever vaccination certificate may be required if arriving from certain countries.</li>
+                        </ul>
+                    </details>
+                </div>
+                <div class="bg-white p-4 rounded shadow">
+                    <details>
+                        <summary class="text-lg font-semibold text-gray-800 cursor-pointer">Currency</summary>
+                        <ul class="mt-2 text-gray-700 space-y-2 pl-4">
+                            <li>Currency: Kenyan Shilling (KES)</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Safety Tips -->
+    <div class="content-section">
+        <div class="container mx-auto px-4 py-10 text-center">
+            <h2 class="text-4xl font-bold">Safety Tips</h2>
+            <p class="text-gray-700 mt-4 max-w-3xl mx-auto">Stay safe by keeping valuables secure, avoiding isolated areas at night, and following local guidelines. Always carry a copy of your passport and travel insurance details.</p>
+        </div>
+    </div>
+
+    <!-- Section 4: Footer and Copyright (same as index.html) -->
+    <div class="content-section">
+        <footer class="container mx-auto px-4 py-10 flex justify-between text-gray-600">
+            <div>
+                <span class="text-yellow-400 text-xl">🌞</span>
+                <span class="font-bold">Pori</span>
+                <p class="mt-2">Discover Kenya's natural wonders and cultural treasures with Pori, your guide to authentic local experiences.</p>
+            </div>
+            <div>
+                <h4 class="font-bold">Explore</h4>
+                <ul class="mt-2 space-y-2">
+                    <li><a href="what_to_do.html" class="hover:text-gray-900">What to do</a></li>
+                    <li><a href="where_to_stay.html" class="hover:text-gray-900">Where to stay</a></li>
+                    <li><a href="where_to_eat.html" class="hover:text-gray-900">Where to eat</a></li>
+                    <li><a href="visitor_info.html" class="hover:text-gray-900">Visitor info</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold">Information</h4>
+                <ul class="mt-2 space-y-2">
+                    <li><a href="about.html" class="hover:text-gray-900">About Us</a></li>
+                    <li><a href="#" class="hover:text-gray-900">Travel Tips</a></li>
+                    <li><a href="#" class="hover:text-gray-900">FAQs</a></li>
+                    <li><a href="contact.html" class="hover:text-gray-900">Contact Us</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold">Legal</h4>
+                <ul class="mt-2 space-y-2">
+                    <li><a href="#" class="hover:text-gray-900">Privacy Policy</a></li>
+                    <li><a href="#" class="hover:text-gray-900">Terms of Service</a></li>
+                    <li><a href="#" class="hover:text-gray-900">Cookie Policy</a></li>
+                </ul>
+            </div>
+        </footer>
+    </div>
+
+    <div class="content-section">
+        <div class="text-center text-gray-500 py-4">
+            <p>© 2025 Pori. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

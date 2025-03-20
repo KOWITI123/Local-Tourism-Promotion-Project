@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pori - Where to Stay</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .placeholder-image-large {
+            background-color: #757575;
+            width: 100%;
+            height: 600px;
+            position: relative;
+        }
+        .explore-section {
+            position: relative;
+            height: 300px;
+            margin-top: 0;
+            overflow: hidden;
+        }
+        .explore-section img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .explore-section .content-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        .content-section {
+            margin-top: 100px;
+        }
+        .perfect-stay-placeholder {
+            background-color: #D3D3D3;
+            width: 100%;
+            height: 400px;
+            position: relative;
+        }
+        .perfect-stay-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100px;
+            height: 100px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23A0A0A0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>') no-repeat center;
+            transform: translate(-50%, -50%);
+        }
+        .aspect-\[4\/3\] {
+            aspect-ratio: 4 / 3;
+        }
+        .accommodation-placeholder {
+            background-color: #D3D3D3;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .accommodation-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23A0A0A0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>') no-repeat center;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full bg-white shadow-md z-10">
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center">
+                <span class="text-yellow-400 text-2xl mr-4">🌞</span>
+                <span class="text-xl font-bold">Pori</span>
+            </div>
+            <div class="space-x-4">
+                <a href="index.html" class="text-gray-600 hover:text-gray-900">Home</a>
+                <a href="about.html" class="text-gray-600 hover:text-gray-900">About</a>
+                <a href="what_to_do.html" class="text-gray-600 hover:text-gray-900">What to do</a>
+                <a href="where_to_stay.html" class="text-gray-600 hover:text-gray-900">Where to stay</a>
+                <a href="where_to_eat.html" class="text-gray-600 hover:text-gray-900">Where to eat</a>
+                <a href="visitor_info.html" class="text-gray-600 hover:text-gray-900">Visitor info</a>
+                <a href="contact.html" class="text-gray-600 hover:text-gray-900">Contact</a>
+            </div>
+            <div>
+                <button class="text-gray-600 hover:text-gray-900">⋮</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Section 1: Where to Stay -->
+    <div class="explore-section">
+        <img src="../static/images/where_to_stay.jpeg" alt="Where to Stay" class="w-full h-full object-cover">
+        <div class="content-overlay">
+            <div class="p-6">
+                <h1 class="text-5xl font-bold">Where to Stay in Kenya</h1>
+                <p class="text-xl mt-4">Find the perfect accommodation for your Kenyan adventure.</p>
+                <button class="mt-6 bg-orange-500 text-white px-6 py-2 rounded">View Options</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Accommodation Types -->
+    <div class="content-section">
+        <div class="container mx-auto px-4 py-10">
+            <h2 class="text-4xl font-bold">Accommodation Types</h2>
+            <ul class="mt-6 space-y-4">
+                <li class="flex items-center gap-4">
+                    <div class="relative w-1/3 aspect-[4/3] overflow-hidden">
+                        <img src="../static/images/luxury_safari.jpeg" alt="Luxury Safari Lodges & Camps" class="absolute inset-0 w-full h-full object-cover">
+                    </div>
+                    <p class="text-gray-700 w-2/3">Luxury Safari Lodges & Camps</p>
+                </li>
+                <li class="flex items-center gap-4">
+                    <div class="relative w-1/3 aspect-[4/3] overflow-hidden">
+                        <img src="../static/images/luxury_beach.jpeg" alt="Luxury Beach Resorts & Villas" class="absolute inset-0 w-full h-full object-cover">
+                    </div>
+                    <p class="text-gray-700 w-2/3">Luxury Beach Resorts & Villas</p>
+                </li>
+                <li class="flex items-center gap-4">
+                    <div class="relative w-1/3 aspect-[4/3] overflow-hidden">
+                        <img src="../static/images/highend_hotel.jpeg" alt="High-End Hotels" class="absolute inset-0 w-full h-full object-cover">
+                    </div>
+                    <p class="text-gray-700 w-2/3">High-End Hotels</p>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Section 3: Budget Options -->
+    <div class="content-section">
+        <div class="container mx-auto px-4 py-10">
+            <h2 class="text-4xl font-bold text-center">Budget-Friendly Stays</h2>
+            <ul class="mt-6 space-y-4">
+                <li class="flex items-center gap-4">
+                    <div class="relative w-1/3 aspect-[4/3] overflow-hidden">
+                        <img src="../static/images/budget_hotel.jpeg" alt="Budget Hotels and Guesthouses" class="absolute inset-0 w-full h-full object-cover">
+                    </div>
+                    <p class="text-gray-700 w-2/3">Budget Hotels and Guesthouses</p>
+                </li>
+                <li class="flex items-center gap-4">
+                    <div class="relative w-1/3 aspect-[4/3] overflow-hidden">
+                        <img src="../static/images/airbnb.jpeg" alt="Airbnb & Vacation Rentals" class="absolute inset-0 w-full h-full object-cover">
+                    </div>
+                    <p class="text-gray-700 w-2/3">Airbnb & Vacation Rentals</p>
+                </li>
+                <li class="flex items-center gap-4">
+                    <div class="relative w-1/3 aspect-[4/3] overflow-hidden">
+                        <img src="../static/images/hostel.jpeg" alt="Hostels" class="absolute inset-0 w-full h-full object-cover">
+                    </div>
+                    <p class="text-gray-700 w-2/3">Hostels</p>
+                </li>
+                <li class="flex items-center gap-4">
+                    <div class="relative w-1/3 aspect-[4/3] overflow-hidden">
+                        <img src="../static/images/campsite.jpeg" alt="Campsites & Basic Lodges" class="absolute inset-0 w-full h-full object-cover">
+                    </div>
+                    <p class="text-gray-700 w-2/3">Campsites & Basic Lodges</p>
+                </li>
+                <li class="flex items-center gap-4">
+                    <div class="relative w-1/3 aspect-[4/3] overflow-hidden">
+                        <img src="../static/images/guesthouse.jpeg" alt="Local Guesthouses" class="absolute inset-0 w-full h-full object-cover">
+                    </div>
+                    <p class="text-gray-700 w-2/3">Local Guesthouses</p>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Section 4: Footer and Copyright (same as index.html) -->
+    <div class="content-section">
+        <footer class="container mx-auto px-4 py-10 flex justify-between text-gray-600">
+            <div>
+                <span class="text-yellow-400 text-xl">🌞</span>
+                <span class="font-bold">Pori</span>
+                <p class="mt-2">Discover Kenya's natural wonders and cultural treasures with Pori, your guide to authentic local experiences.</p>
+            </div>
+            <div>
+                <h4 class="font-bold">Explore</h4>
+                <ul class="mt-2 space-y-2">
+                    <li><a href="what_to_do.html" class="hover:text-gray-900">What to do</a></li>
+                    <li><a href="where_to_stay.html" class="hover:text-gray-900">Where to stay</a></li>
+                    <li><a href="where_to_eat.html" class="hover:text-gray-900">Where to eat</a></li>
+                    <li><a href="visitor_info.html" class="hover:text-gray-900">Visitor info</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold">Information</h4>
+                <ul class="mt-2 space-y-2">
+                    <li><a href="about.html" class="hover:text-gray-900">About Us</a></li>
+                    <li><a href="#" class="hover:text-gray-900">Travel Tips</a></li>
+                    <li><a href="#" class="hover:text-gray-900">FAQs</a></li>
+                    <li><a href="contact.html" class="hover:text-gray-900">Contact Us</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold">Legal</h4>
+                <ul class="mt-2 space-y-2">
+                    <li><a href="#" class="hover:text-gray-900">Privacy Policy</a></li>
+                    <li><a href="#" class="hover:text-gray-900">Terms of Service</a></li>
+                    <li><a href="#" class="hover:text-gray-900">Cookie Policy</a></li>
+                </ul>
+            </div>
+        </footer>
+    </div>
+
+    <div class="content-section">
+        <div class="text-center text-gray-500 py-4">
+            <p>© 2025 Pori. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

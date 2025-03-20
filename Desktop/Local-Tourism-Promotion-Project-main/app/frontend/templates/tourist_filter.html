@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tourist Filter - Pori</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        #map { 
+            height: 500px;
+            width: 100%;
+            position: relative;
+        }
+        .carousel { 
+            display: flex; 
+            overflow-x: auto; 
+            scroll-snap-type: x mandatory; 
+        }
+        .carousel-item { 
+            flex: 0 0 auto; 
+            width: 300px; 
+            scroll-snap-align: start; 
+        }
+        #chatbot {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transform: translateX(110%);
+            transition: transform 0.3s ease-in-out;
+        }
+        #chatbot.active { 
+            transform: translateX(0); 
+        }
+        #chatbot-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: #f97316;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        #chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            max-width: 70%;
+        }
+        .bot-message { 
+            background-color: #e5e7eb; 
+        }
+        .user-message { 
+            background-color: #f97316; 
+            color: white; 
+            margin-left: auto; 
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Navbar (unchanged) -->
+    <nav class="fixed top-0 w-full bg-white shadow-md z-10">
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center">
+                <span class="text-yellow-400 text-2xl mr-4">🌞</span>
+                <span class="text-xl font-bold">Pori</span>
+            </div>
+            <div class="space-x-4">
+                <a href="/" class="text-gray-600 hover:text-gray-900">Home</a>
+                <a href="#" class="text-gray-600 hover:text-gray-900">About</a>
+                <a href="what_to_do.html" class="text-gray-600 hover:text-gray-900">What to do</a>
+                <a href="where_to_stay.html" class="text-gray-600 hover:text-gray-900">Where to stay</a>
+                <a href="where_to_eat.html" class="text-gray-600 hover:text-gray-900">Where to eat</a>
+                <a href="visitor_info.html" class="text-gray-600 hover:text-gray-900">Visitor info</a>
+                <a href="contact.html" class="text-gray-600 hover:text-gray-900">Contact</a>
+            </div>
+            <div>
+                <button class="text-gray-600 hover:text-gray-900">⋮</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Filter Interface (unchanged) -->
+    <div class="container mx-auto px-4 py-20">
+        <h1 class="text-4xl font-bold text-center mb-8">Find Your Perfect Adventure</h1>
+        <form id="filter-form" class="bg-white p-6 rounded shadow-md">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="location" class="block text-gray-700 font-bold mb-2">Location</label>
+                    <select id="location" name="location" class="w-full p-2 border rounded">
+                        <option value="">Select Location</option>
+                        <option value="maasai-mara">Maasai Mara</option>
+                        <option value="nairobi">Nairobi</option>
+                        <option value="mombasa">Mombasa</option>
+                        <option value="lamu">Lamu</option>
+                        <option value="nakuru">Nakuru</option>
+                        <option value="kajiado">Kajiado</option>
+                        <option value="homa-bay">Homa Bay</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="budget" class="block text-gray-700 font-bold mb-2">Budget (Ksh)</label>
+                    <select id="budget" name="budget" class="w-full p-2 border rounded">
+                        <option value="">Select Budget</option>
+                        <option value="0-1000">Under 1000 Ksh</option>
+                        <option value="1000-5000">1000-5000 Ksh</option>
+                        <option value="5000-10000">5000-10000 Ksh</option>
+                        <option value="10000+">Above 10000 Ksh</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="experience" class="block text-gray-700 font-bold mb-2">Type of Experience</label>
+                    <select id="experience" name="experience" class="w-full p-2 border rounded">
+                        <option value="">Select Experience</option>
+                        <option value="Safari">Safari</option>
+                        <option value="Photography">Photography</option>
+                        <option value="Game Drives">Game Drives</option>
+                        <option value="Bird Watching">Bird Watching</option>
+                        <option value="Nature Walks">Nature Walks</option>
+                        <option value="Cultural Tours">Cultural Tours</option>
+                        <option value="Camping">Camping</option>
+                        <option value="Hot Springs">Hot Springs</option>
+                        <option value="Lion Tracking">Lion Tracking</option>
+                        <option value="Chimpanzee Sanctuary Visit">Chimpanzee Sanctuary Visit</option>
+                        <option value="Hiking">Hiking</option>
+                        <option value="Cave Exploration">Cave Exploration</option>
+                        <option value="Wildlife Viewing">Wildlife Viewing</option>
+                        <option value="Fossil Hunting">Fossil Hunting</option>
+                        <option value="Elephant Interaction">Elephant Interaction</option>
+                        <option value="Conservation Education">Conservation Education</option>
+                        <option value="Giraffe Feeding">Giraffe Feeding</option>
+                        <option value="Educational Tours">Educational Tours</option>
+                        <option value="Historical Tours">Historical Tours</option>
+                        <option value="Cultural Learning">Cultural Learning</option>
+                        <option value="Traditional Dance Performances">Traditional Dance Performances</option>
+                        <option value="Cultural Exhibitions">Cultural Exhibitions</option>
+                        <option value="Museum Tours">Museum Tours</option>
+                        <option value="Historical Exhibits">Historical Exhibits</option>
+                        <option value="Cycling">Cycling</option>
+                        <option value="Fishing">Fishing</option>
+                        <option value="Relaxation">Relaxation</option>
+                        <option value="Canopy Tours">Canopy Tours</option>
+                        <option value="Boat Rides">Boat Rides</option>
+                        <option value="Swimming">Swimming</option>
+                        <option value="Horse Riding">Horse Riding</option>
+                        <option value="Starbed Camping">Starbed Camping</option>
+                        <option value="Fine Dining">Fine Dining</option>
+                        <option value="Scenic Viewing">Scenic Viewing</option>
+                        <option value="Rock Jumping">Rock Jumping</option>
+                        <option value="Sightseeing">Sightseeing</option>
+                        <option value="Desert Safaris">Desert Safaris</option>
+                        <option value="Camel Watching">Camel Watching</option>
+                        <option value="Cultural Interaction">Cultural Interaction</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-6 text-center">
+                <button type="submit" id="submit-filter" class="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    Submit Filters
+                </button>
+            </div>
+        </form>
+        <div id="current-weather" class="text-center text-gray-700 mt-4"></div>
+    </div>
+
+    <!-- Results Section (unchanged) -->
+    <div id="results-section" class="container mx-auto px-4 py-10 hidden">
+        <h2 class="text-3xl font-bold text-center mb-8">Recommended Destinations</h2>
+        <div id="list-view" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"></div>
+        <div class="mb-8 w-full">
+            <h3 class="text-2xl font-bold mb-4">Map View</h3>
+            <div id="map" class="w-full h-full"></div>
+        </div>
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">Explore More</h3>
+            <div id="carousel" class="carousel"></div>
+        </div>
+    </div>
+
+    <!-- Footer (unchanged) -->
+    <footer class="container mx-auto px-4 py-10 flex justify-between text-gray-600">
+        <div>
+            <span class="text-yellow-400 text-xl">🌞</span>
+            <span class="font-bold">Pori</span>
+            <p class="mt-2">Discover Kenya's natural wonders and cultural treasures with Pori, your guide to authentic local experiences.</p>
+        </div>
+        <div>
+            <h4 class="font-bold">Explore</h4>
+            <ul class="mt-2 space-y-2">
+                <li><a href="#" class="hover:text-gray-900">Wildlife Safaris</a></li>
+                <li><a href="#" class="hover:text-gray-900">Cultural Tours</a></li>
+                <li><a href="#" class="hover:text-gray-900">Beach Getaways</a></li>
+                <li><a href="#" class="hover:text-gray-900">Adventure Activities</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4 class="font-bold">Information</h4>
+            <details class="mt-2">
+                <summary class="text-gray-600 hover:text-gray-900 cursor-pointer">Travel Tips</summary>
+                <ul class="mt-2 space-y-2 pl-4">
+                    <li><a href="what_to_do.html" class="hover:text-gray-900">What to do</a></li>
+                    <li><a href="where_to_stay.html" class="hover:text-gray-900">Where to stay</a></li>
+                    <li><a href="where_to_eat.html" class="hover:text-gray-900">Where to eat</a></li>
+                </ul>
+            </details>
+        </div>
+        <div>
+            <h4 class="font-bold">Legal</h4>
+            <ul class="mt-2 space-y-2">
+                <li><a href="#" class="hover:text-gray-900">Privacy Policy</a></li>
+                <li><a href="#" class="hover:text-gray-900">Terms of Service</a></li>
+                <li><a href="#" class="hover:text-gray-900">Cookie Policy</a></li>
+            </ul>
+        </div>
+    </footer>
+
+    <div class="text-center text-gray-500 py-4">
+        <p>© 2025 Pori. All rights reserved.</p>
+    </div>
+
+    <!-- Chatbot Section -->
+    <button id="chatbot-toggle">💬</button>
+    <div id="chatbot">
+        <div id="chat-messages"></div>
+        <div class="p-4 flex">
+            <input type="text" id="chat-input" placeholder="Type your message..." class="flex-1 p-2 border rounded-l">
+            <button id="chat-send" class="bg-orange-500 text-white px-4 py-2 rounded-r">Send</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize Map (unchanged)
+        const map = L.map('map').setView([-1.29, 36.82], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const locationCoordinates = {
+            'maasai-mara': { lat: -1.5000, lon: 35.0000 },
+            'nairobi': { lat: -1.2921, lon: 36.8219 },
+            'mombasa': { lat: -4.0433, lon: 39.6682 },
+            'lamu': { lat: -2.2717, lon: 40.9020 },
+            'nakuru': { lat: -0.3031, lon: 36.0800 },
+            'kajiado': { lat: -1.8457, lon: 36.7850 },
+            'homa-bay': { lat: -0.5273, lon: 34.4571 }
+        };
+
+        const locationDisplayNames = {
+            'maasai-mara': 'Maasai Mara',
+            'nairobi': 'Nairobi',
+            'mombasa': 'Mombasa',
+            'lamu': 'Lamu',
+            'nakuru': 'Nakuru',
+            'kajiado': 'Kajiado',
+            'homa-bay': 'Homa Bay'
+        };
+
+        // Form submission (unchanged)
+        document.getElementById('filter-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const filters = Object.fromEntries(formData.entries());
+
+            let currentWeather = null;
+            if (filters.location) {
+                const coords = locationCoordinates[filters.location];
+                if (coords) {
+                    try {
+                        const url = `/get_weather?lat=${coords.lat}&lon=${coords.lon}`;
+                        console.log(`Weather fetch URL: ${url}`);
+                        const weatherResponse = await fetch(url);
+                        if (!weatherResponse.ok) {
+                            throw new Error(`Weather API error! Status: ${weatherResponse.status} - ${weatherResponse.statusText}`);
+                        }
+                        const weatherData = await weatherResponse.json();
+                        const weatherMain = weatherData.weather[0].main.toLowerCase();
+                        currentWeather = mapWeatherCondition(weatherMain);
+                        console.log(`Weather in ${filters.location}: ${currentWeather}`);
+                    } catch (error) {
+                        console.error('Weather fetch error:', error.message);
+                        alert(`Could not fetch weather data: ${error.message}. Proceeding without weather information.`);
+                    }
+                } else {
+                    console.warn('No coordinates found for location:', filters.location);
+                    alert('No coordinates available for the selected location. Proceeding without weather information.');
+                }
+            }
+
+            try {
+                const response = await fetch('/filter_attractions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(filters)
+                });
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const data = await response.json();
+
+                if (currentWeather) {
+                    document.getElementById('current-weather').innerHTML = `Current Weather in ${locationDisplayNames[filters.location] || filters.location}: ${currentWeather.charAt(0).toUpperCase() + currentWeather.slice(1)}`;
+                }
+
+                const filteredAttractions = data.attractions;
+                console.log('Attractions:', filteredAttractions);
+
+                displayResults(filteredAttractions, filters.location);
+                document.getElementById('results-section').classList.remove('hidden');
+
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 100);
+            } catch (error) {
+                console.error('Error fetching attractions:', error);
+                alert('An error occurred while fetching results. Please try again.');
+            }
+        });
+
+        function mapWeatherCondition(weatherMain) {
+            if (weatherMain.includes('clear')) return 'sunny';
+            if (weatherMain.includes('cloud')) return 'cloudy';
+            if (weatherMain.includes('rain') || weatherMain.includes('drizzle') || weatherMain.includes('thunderstorm')) return 'rainy';
+            return 'cloudy';
+        }
+
+        // Display results (unchanged)
+        function displayResults(attractions, selectedLocation) {
+            const listView = document.getElementById('list-view');
+            const carousel = document.getElementById('carousel');
+            listView.innerHTML = '';
+            carousel.innerHTML = '';
+
+            map.eachLayer(layer => {
+                map.removeLayer(layer);
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            if (attractions.length === 0) {
+                listView.innerHTML = '<p class="text-center text-gray-600">No attractions match your filters. Try adjusting your budget or experience preferences, or add more attractions to the database.</p>';
+                if (selectedLocation && locationCoordinates[selectedLocation]) {
+                    const { lat, lon } = locationCoordinates[selectedLocation];
+                    map.setView([lat, lon], 12);
+                }
+                return;
+            }
+
+            const bounds = [];
+            attractions.forEach(attr => {
+                listView.innerHTML += `
+                    <div class="bg-white p-4 rounded shadow">
+                        <h3 class="text-xl font-bold">${attr.name}</h3>
+                        <p class="text-gray-700 mt-2">${attr.description}</p>
+                        <p class="text-gray-700 mt-2"><strong>Location:</strong> ${attr.location}</p>
+                        <p class="text-gray-700 mt-2"><strong>Rates:</strong> Citizens: ${attr.rates_citizens}</p>
+                    </div>`;
+                carousel.innerHTML += `
+                    <div class="carousel-item bg-white p-4 rounded shadow mr-4">
+                        <h3 class="text-lg font-bold">${attr.name}</h3>
+                        <p class="text-gray-700">${attr.description.substring(0, 50)}...</p>
+                    </div>`;
+                if (attr.lat && attr.lon && !isNaN(attr.lat) && !isNaN(attr.lon)) {
+                    const marker = L.marker([parseFloat(attr.lat), parseFloat(attr.lon)]).addTo(map)
+                        .bindPopup(`<b>${attr.name}</b><br>${attr.description}`);
+                    bounds.push([parseFloat(attr.lat), parseFloat(attr.lon)]);
+                } else {
+                    console.warn(`Invalid or missing coordinates for attraction: ${attr.name}, lat: ${attr.lat}, lon: ${attr.lon}`);
+                }
+            });
+
+            if (selectedLocation && locationCoordinates[selectedLocation]) {
+                const { lat, lon } = locationCoordinates[selectedLocation];
+                map.setView([lat, lon], 12);
+            }
+
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+            } else {
+                console.warn('No valid coordinates to fit bounds. Using default location.');
+                if (selectedLocation && locationCoordinates[selectedLocation]) {
+                    const { lat, lon } = locationCoordinates[selectedLocation];
+                    map.setView([lat, lon], 12);
+                }
+            }
+        }
+
+        // Updated Chatbot Functionality
+        const chatbotToggle = document.getElementById('chatbot-toggle');
+        const chatbot = document.getElementById('chatbot');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
+
+        chatbotToggle.addEventListener('click', () => {
+            chatbot.classList.toggle('active');
+        });
+
+        async function sendChatMessage(message) {
+            if (!message) return;
+
+            // Append user message
+            appendMessage(message, 'user-message');
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: message })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Chat API error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                appendMessage(data.response, 'bot-message');
+            } catch (error) {
+                console.error('Error in chatbot:', error);
+                appendMessage('Sorry, something went wrong. Please try again.', 'bot-message');
+            }
+        }
+
+        chatSend.addEventListener('click', () => {
+            const message = chatInput.value.trim();
+            if (message) {
+                sendChatMessage(message);
+                chatInput.value = '';
+            }
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const message = chatInput.value.trim();
+                if (message) {
+                    sendChatMessage(message);
+                    chatInput.value = '';
+                }
+            }
+        });
+
+        function appendMessage(text, className) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', className);
+            messageDiv.textContent = text;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+</body>
+</html>

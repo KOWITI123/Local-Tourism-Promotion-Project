@@ -1,0 +1,13 @@
+psycopg2-binary
+python-dotenv
+langchain
+langchain-openai
+langchain-community
+openai
+chromadb
+authlib
+flask
+bcrypt
+email-validator
+phonenumbers
+zxcvbn
