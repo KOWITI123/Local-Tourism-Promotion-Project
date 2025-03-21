@@ -1,8 +1,12 @@
-.env
-node_modules
-.qodo
-AppData/
-.vscode/
-.cache/
-Downloads/
+# Ignore system files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
 __pycache__/
+.vscode/
+.idea/
+.cache/
+node_modules/
+AppData/
+Downloads/
