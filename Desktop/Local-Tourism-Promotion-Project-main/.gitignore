@@ -1,3 +1,8 @@
 .env
 node_modules
 .qodo
+AppData/
+.vscode/
+.cache/
+Downloads/
+__pycache__/
