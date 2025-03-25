@@ -21,7 +21,7 @@ if not openai_api_key:
 # Connect to PostgreSQL
 def create_connection():
     try:
-        connection = psycopg2.connect(**DB_CONFIG)
+        connection = psycopg2.connect(**DB_CONFIG['kenya_tourism'])
         return connection
     except psycopg2.Error as e:
         print(f"Error connecting to PostgreSQL: {e}")

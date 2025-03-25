@@ -38,7 +38,9 @@ def setup_database():
             best_time_to_visit VARCHAR(50),
             rates_citizens VARCHAR(20),
             rates_residents VARCHAR(20),
-            rates_non_residents VARCHAR(20)
+            rates_non_residents VARCHAR(20),
+            latitude NUMERIC,
+            longitude NUMERIC
         );
         """
         

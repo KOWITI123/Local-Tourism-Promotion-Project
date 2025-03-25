@@ -85,19 +85,26 @@
                 <span class="text-xl font-bold">Pori</span>
             </div>
             <div class="space-x-4">
-                <a href="index.html" class="text-gray-600 hover:text-gray-900">Home</a>
-                <a href="about.html" class="text-gray-600 hover:text-gray-900">About</a>
-                <a href="what_to_do.html" class="text-gray-600 hover:text-gray-900">What to do</a>
-                <a href="where_to_stay.html" class="text-gray-600 hover:text-gray-900">Where to stay</a>
-                <a href="where_to_eat.html" class="text-gray-600 hover:text-gray-900">Where to eat</a>
-                <a href="visitor_info.html" class="text-gray-600 hover:text-gray-900">Visitor info</a>
-                <a href="contact.html" class="text-gray-600 hover:text-gray-900">Contact</a>
+                <a href="/index" class="text-gray-600 hover:text-gray-900">Home</a>
+                <a href="/about" class="text-gray-600 hover:text-gray-900">About</a>
+                <a href="/what_to_do" class="text-gray-600 hover:text-gray-900">What to do</a>
+                <a href="/where_to_stay" class="text-gray-600 hover:text-gray-900">Where to stay</a>
+                <a href="/where_to_eat" class="text-gray-600 hover:text-gray-900">Where to eat</a>
+                <a href="/visitor_info" class="text-gray-600 hover:text-gray-900">Visitor info</a>
+                <a href="/contact" class="text-gray-600 hover:text-gray-900">Contact</a>
+                <a href="/logout" class="text-gray-600 hover:text-gray-900">Sign Out</a>
             </div>
             <div>
                 <button class="text-gray-600 hover:text-gray-900">⋮</button>
             </div>
         </div>
     </nav>
+
+    <!-- Booking Statement and Button -->
+    <div class="container mx-auto px-4 py-6 text-center">
+        <p class="text-xl text-gray-700">Book your accommodation with ease! Explore a wide range of hotels and lodges tailored to your Kenyan journey.</p>
+        <button id="book-now-btn" class="mt-4 bg-orange-500 text-white px-6 py-2 rounded">Book Now</button>
+    </div>
 
     <!-- Section 1: Where to Stay -->
     <div class="explore-section">
@@ -110,6 +117,42 @@
             </div>
         </div>
     </div>
+
+    <!-- Hotel Search Modal -->
+<div id="hotel-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-4">Search Hotels</h2>
+        <form id="hotel-form">
+            <div class="mb-4">
+                <label class="block text-gray-700">Check-In Date</label>
+                <input type="date" name="checkIn" class="w-full p-2 border rounded" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Check-Out Date</label>
+                <input type="date" name="checkOut" class="w-full p-2 border rounded" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Adults</label>
+                <input type="number" name="adults" min="1" value="1" class="w-full p-2 border rounded" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Location</label>
+                <select id="location-select" name="location" class="w-full p-2 border rounded" required>
+                    <option value="KE">Anywhere in Kenya</option>
+                    <option value="NBO">Nairobi</option>
+                    <option value="MBA">Mombasa</option>
+                    <option value="KIS">Kisumu</option>
+                    <option value="DIA">Diani Beach</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded">Search</button>
+            <button type="button" id="close-modal" class="ml-2 bg-gray-500 text-white px-4 py-2 rounded">Close</button>
+        </form>
+        <div id="hotel-results" class="mt-4 max-h-60 overflow-y-auto">
+            <!-- Results will be populated here -->
+        </div>
+    </div>
+</div>
 
     <!-- Section 2: Accommodation Types -->
     <div class="content-section">
@@ -177,7 +220,7 @@
         </div>
     </div>
 
-    <!-- Section 4: Footer and Copyright (same as index.html) -->
+    <!-- Section 4: Footer and Copyright -->
     <div class="content-section">
         <footer class="container mx-auto px-4 py-10 flex justify-between text-gray-600">
             <div>
@@ -188,27 +231,27 @@
             <div>
                 <h4 class="font-bold">Explore</h4>
                 <ul class="mt-2 space-y-2">
-                    <li><a href="what_to_do.html" class="hover:text-gray-900">What to do</a></li>
-                    <li><a href="where_to_stay.html" class="hover:text-gray-900">Where to stay</a></li>
-                    <li><a href="where_to_eat.html" class="hover:text-gray-900">Where to eat</a></li>
-                    <li><a href="visitor_info.html" class="hover:text-gray-900">Visitor info</a></li>
+                    <li><a href="/what_to_do" class="hover:text-gray-900">What to do</a></li>
+                    <li><a href="/where_to_stay" class="hover:text-gray-900">Where to stay</a></li>
+                    <li><a href="/where_to_eat" class="hover:text-gray-900">Where to eat</a></li>
+                    <li><a href="/visitor_info" class="hover:text-gray-900">Visitor info</a></li>
                 </ul>
             </div>
             <div>
                 <h4 class="font-bold">Information</h4>
                 <ul class="mt-2 space-y-2">
-                    <li><a href="about.html" class="hover:text-gray-900">About Us</a></li>
+                    <li><a href="/about" class="hover:text-gray-900">About Us</a></li>
                     <li><a href="#" class="hover:text-gray-900">Travel Tips</a></li>
-                    <li><a href="#" class="hover:text-gray-900">FAQs</a></li>
-                    <li><a href="contact.html" class="hover:text-gray-900">Contact Us</a></li>
+                    <li><a href="/faqs" class="hover:text-gray-900">FAQs</a></li>
+                    <li><a href="/contact" class="hover:text-gray-900">Contact Us</a></li>
                 </ul>
             </div>
             <div>
                 <h4 class="font-bold">Legal</h4>
                 <ul class="mt-2 space-y-2">
-                    <li><a href="#" class="hover:text-gray-900">Privacy Policy</a></li>
-                    <li><a href="#" class="hover:text-gray-900">Terms of Service</a></li>
-                    <li><a href="#" class="hover:text-gray-900">Cookie Policy</a></li>
+                    <li><a href="/privacy_policy" class="hover:text-gray-900">Privacy Policy</a></li>
+                    <li><a href="/terms_of_service" class="hover:text-gray-900">Terms of Service</a></li>
+                    <li><a href="/cookie_policy" class="hover:text-gray-900">Cookie Policy</a></li>
                 </ul>
             </div>
         </footer>
@@ -219,5 +262,120 @@
             <p>© 2025 Pori. All rights reserved.</p>
         </div>
     </div>
+
+    <script>
+        // Fetch Kenya destinations when the page loads
+        async function loadKenyaDestinations() {
+            try {
+                const response = await fetch('/get_kenya_destinations');
+                if (!response.ok) throw new Error('Failed to fetch destinations');
+                const destinations = await response.json();
+                const locationSelect = document.getElementById('location-select');
+                if (!locationSelect) {
+                    console.error('Location select element not found');
+                    return;
+                }
+                locationSelect.innerHTML = destinations.map(dest => `
+                    <option value="${dest.code}">${dest.name}</option>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading destinations:', error);
+                const locationSelect = document.getElementById('location-select');
+                if (!locationSelect) {
+                    console.error('Location select element not found');
+                    return;
+                }
+                locationSelect.innerHTML = `
+                    <option value="KE">Anywhere in Kenya</option>
+                    <option value="NBO">Nairobi</option>
+                    <option value="MBA">Mombasa</option>
+                    <option value="KIS">Kisumu</option>
+                    <option value="DIA">Diani Beach</option>
+                `;
+            }
+        }
+    
+        document.addEventListener('DOMContentLoaded', loadKenyaDestinations);
+    
+        const bookNowBtn = document.getElementById('book-now-btn');
+        const hotelModal = document.getElementById('hotel-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        const hotelForm = document.getElementById('hotel-form');
+        const hotelResults = document.getElementById('hotel-results');
+    
+        bookNowBtn.addEventListener('click', () => {
+            hotelModal.classList.remove('hidden');
+        });
+    
+        closeModalBtn.addEventListener('click', () => {
+            hotelModal.classList.add('hidden');
+            hotelResults.innerHTML = '';
+        });
+    
+        hotelForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    console.log('Hotel search data:', data);
+
+    try {
+        console.log('Sending fetch request to /search_hotels...');
+        const response = await fetch('/search_hotels', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        console.log('Fetch response:', response);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+        }
+        const result = await response.json();
+        console.log('Full API response:', result);
+        console.log('Hotels returned by backend:', result.hotels);
+
+        // Get the selected location name for display purposes
+        let selectedLocation = "Kenya";
+        const locationSelect = document.getElementById('location-select');
+        if (locationSelect) {
+            selectedLocation = locationSelect.options[locationSelect.selectedIndex]?.text || "Kenya";
+        } else {
+            console.error('Location select element not found; using default location: Kenya');
+        }
+
+        const hotels = result.hotels;
+        hotelResults.innerHTML = hotels.length > 0
+            ? hotels.map(hotel => {
+                const price = parseFloat(hotel.minRate);
+                const lat = parseFloat(hotel.latitude);
+                const lon = parseFloat(hotel.longitude);
+
+                const formattedPrice = !isNaN(price) ? price.toFixed(2) : "N/A";
+                const formattedLat = !isNaN(lat) ? lat.toFixed(4) : "N/A";
+                const formattedLon = !isNaN(lon) ? lon.toFixed(4) : "N/A";
+
+                const displayLocation = hotel.destinationName && hotel.destinationName !== "Unknown"
+                    ? hotel.destinationName
+                    : selectedLocation;
+
+                return `
+                    <div class="border p-4 mb-2 rounded">
+                        <h3 class="font-bold">${hotel.name}</h3>
+                        <p>Price: ${formattedPrice} ${hotel.currency}</p>
+                        <p>Location: ${displayLocation} (${formattedLat}, ${formattedLon})</p>
+                    </div>
+                `;
+            }).join('')
+            : `<p>No hotels found in ${selectedLocation}.</p>`;
+
+        if (typeof updateGamificationUI === 'function' && result.gamification) {
+            updateGamificationUI(result.gamification);
+        }
+    } catch (error) {
+        console.error('Error searching hotels:', error);
+        hotelResults.innerHTML = `<p>Error: ${error.message}</p>`;
+    }
+});    
+    </script>
 </body>
 </html>

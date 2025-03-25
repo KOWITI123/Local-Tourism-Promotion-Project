@@ -10,7 +10,9 @@ import re
 from email_validator import validate_email, EmailNotValidError
 from dotenv import load_dotenv
 import traceback
-import requests  # Add this import for manual metadata fetching
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
@@ -27,8 +29,14 @@ print(f"AUTH0_DOMAIN: {os.getenv('AUTH0_DOMAIN')}")
 print(f"AUTH0_CLIENT_ID: {os.getenv('AUTH0_CLIENT_ID')}")
 print(f"AUTH0_CLIENT_SECRET: {os.getenv('AUTH0_CLIENT_SECRET')}")
 
+# Debug: Print session type before OAuth initialization
+print(f"Session type before OAuth init: {type(session)}")
+
 oauth = OAuth(app)
 print("OAuth initialized.")
+
+# Debug: Print session type after OAuth initialization
+print(f"Session type after OAuth init: {type(session)}")
 
 # Load Auth0 credentials from environment variables
 auth0_domain = os.getenv('AUTH0_DOMAIN')
@@ -43,7 +51,7 @@ if not all([auth0_domain, auth0_client_id, auth0_client_secret]):
 print("Fetching OIDC discovery document...")
 try:
     discovery_url = f'https://{auth0_domain}/.well-known/openid-configuration'
-    response = requests.get(discovery_url)
+    response = requests.get(discovery_url, timeout=10)
     response.raise_for_status()
     oidc_metadata = response.json()
     print("OIDC metadata:", oidc_metadata)
@@ -51,6 +59,12 @@ try:
     print(f"jwks_uri: {jwks_uri}")
 except Exception as e:
     print(f"Error fetching OIDC discovery document: {e}")
+
+# Create a custom requests session with retries and timeout
+requests_session = requests.Session()  # Renamed to avoid conflict with Flask's session
+retries = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+requests_session.mount('https://', HTTPAdapter(max_retries=retries))
+app.config['AUTHLIB_CLIENT_REQUESTS_SESSION'] = requests_session
 
 # Register Auth0 with the loaded credentials
 auth0 = oauth.register(
@@ -60,8 +74,8 @@ auth0 = oauth.register(
     api_base_url=f'https://{auth0_domain}',
     access_token_url=f'https://{auth0_domain}/oauth/token',
     authorize_url=f'https://{auth0_domain}/authorize',
-    jwks_uri=jwks_uri if 'jwks_uri' in locals() else f'https://{auth0_domain}/.well-known/jwks.json',  # Fallback
-    client_kwargs={'scope': 'openid profile email'},
+    jwks_uri=jwks_uri if 'jwks_uri' in locals() else f'https://{auth0_domain}/.well-known/jwks.json',
+    client_kwargs={'scope': 'openid profile email', 'timeout': 10},
 )
 print("Auth0 registered.")
 
@@ -147,7 +161,7 @@ def verify_user(email, password):
         if cursor:
             cursor.close()
         if connection:
-            connection.close()                
+            connection.close()
 
 @app.route('/')
 def home():
@@ -213,21 +227,38 @@ def register():
     else:
         flash('Registration failed. Email might already exist.', 'error')
         return redirect(url_for('signup_page'))
-    
+
 @app.route('/auth0_login')
 def auth0_login():
     print("Handling /auth0_login route...")
-    redirect_response = auth0.authorize_redirect(redirect_uri=url_for('auth0_callback', _external=True))
-    print(f"Redirecting to: {redirect_response.headers['Location']}")
-    return redirect_response
-
+    print(f"Session type in /auth0_login: {type(session)}")
+    print(f"Session contents before: {session}")
+    import secrets
+    nonce = secrets.token_urlsafe(16)
+    session['nonce'] = nonce
+    redirect_uri = url_for('auth0_callback', _external=True)
+    print(f"Using redirect_uri: {redirect_uri}")
+    print(f"Session contents after: {session}")
+    return auth0.authorize_redirect(
+        redirect_uri=redirect_uri,
+        nonce=nonce
+    )
 
 @app.route('/auth0_signup')
 def auth0_signup():
     print("Handling /auth0_signup route...")
-    redirect_response = auth0.authorize_redirect(redirect_uri=url_for('auth0_callback', _external=True))
-    print(f"Redirecting to: {redirect_response.headers['Location']}")
-    return redirect_response
+    print(f"Session type in /auth0_signup: {type(session)}")
+    print(f"Session contents before: {session}")
+    import secrets
+    nonce = secrets.token_urlsafe(16)
+    session['nonce'] = nonce
+    redirect_uri = url_for('auth0_callback', _external=True)
+    print(f"Using redirect_uri: {redirect_uri}")
+    print(f"Session contents after: {session}")
+    return auth0.authorize_redirect(
+        redirect_uri=redirect_uri,
+        nonce=nonce
+    )
 
 @app.route('/auth0_callback')
 def auth0_callback():
@@ -238,7 +269,6 @@ def auth0_callback():
         print("Access token received:", token)
         
         print("Parsing ID token...")
-        # Retrieve the nonce from the session
         nonce = session.get('nonce')
         print(f"Retrieved nonce from session: {nonce}")
         if not nonce:
@@ -272,13 +302,13 @@ def auth0_callback():
 
         session['user'] = user_info
         print("Redirecting to dashboard...")
-        return redirect('/dashboard')
+        return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"Error in Auth0 callback: {e}")
         print("Stack trace:")
         print(traceback.format_exc())
         flash('Failed to sign up with Google. Please try again.', 'error')
-        return redirect(url_for('signup'))  # Fix the endpoint name here
+        return redirect(url_for('signup_page'))
 
 @app.route('/logout')
 def logout():

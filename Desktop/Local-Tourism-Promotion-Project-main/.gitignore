@@ -1,12 +1,22 @@
-# Ignore system files
-.DS_Store
-Thumbs.db
-desktop.ini
-*.log
-__pycache__/
-.vscode/
-.idea/
-.cache/
-node_modules/
+# Ignore system and user directories
+../*
+../../*
 AppData/
+Cookies/
+Documents/
 Downloads/
+Pictures/
+Videos/
+
+# Ignore common unwanted files
+*.lnk
+*.log
+*.DS_Store
+node_modules/
+dist/
+*.exe
+*.o
+
+# Allow your project files
+!../Local-Tourism-Promotion-Project-main/
+.qodo
