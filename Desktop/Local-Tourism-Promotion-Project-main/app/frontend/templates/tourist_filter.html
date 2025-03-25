@@ -74,6 +74,28 @@
             color: white; 
             margin-left: auto; 
         }
+        .rating {
+            display: inline-flex;
+            flex-direction: row-reverse; /* For hover effect from right to left */
+            cursor: pointer;
+        }
+        .rating input {
+            display: none; /* Hide radio buttons */
+        }
+        .rating label {
+            font-size: 24px;
+            color: #d1d5db; /* Gray for unselected */
+            padding: 0 2px;
+        }
+        .rating label:hover,
+        .rating label:hover ~ label,
+        .rating input:checked ~ label {
+            color: #f59e0b; /* Orange for selected/hovered */
+        }
+        .avg-rating {
+            font-size: 16px;
+            color: #6b7280; /* Gray for average */
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -140,7 +162,7 @@
                 </div>
             </div>
             <div class="mt-6 text-center">
-                <button type="submit" id="submit-filter" class="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <button type="submit" id="submit-filter" class="bg-black text-white px-6 py-2 rounded hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     Submit Filters
                 </button>
             </div>
@@ -168,7 +190,7 @@
         <p id="level">Level: 1</p>
         <div id="badges">Badges: </div>
         <div id="progress-bar" style="width: 100px; height: 10px; background: grey;">
-            <div id="progress" style="height: 100%; background: orange; width: 0%;"></div>
+            <div id="progress" style="height: 100%; background:orange; width: 0%;"></div>
         </div>
     </div>
 
@@ -342,14 +364,13 @@
             return 'cloudy';
         }
 
-        // Display results (updated to include date picker and calendar button)
+        // Updated displayResults to include ratings
         function displayResults(attractions, selectedLocation) {
             const listView = document.getElementById('list-view');
             const carousel = document.getElementById('carousel');
             listView.innerHTML = '';
             carousel.innerHTML = '';
 
-            // Clear only the markers, not the tile layer
             map.eachLayer(layer => {
                 if (layer instanceof L.Marker) {
                     map.removeLayer(layer);
@@ -364,7 +385,7 @@
             }
 
             if (attractions.length === 0) {
-                listView.innerHTML = '<p class="text-center text-gray-600">No attractions match your filters. Try adjusting your budget or experience preferences, or add more attractions to the database.</p>';
+                listView.innerHTML = '<p class="text-center text-gray-600">No attractions match your filters.</p>';
                 if (selectedLocation && locationCoordinates[selectedLocation]) {
                     const { lat, lon } = locationCoordinates[selectedLocation];
                     map.setView([lat, lon], 12);
@@ -373,17 +394,33 @@
             }
 
             const bounds = [];
-            attractions.forEach(attr => {
+            attractions.forEach(async attr => {
+                const attractionId = attr.name.replace(/\s+/g, '-');
                 listView.innerHTML += `
                     <div class="bg-white p-4 rounded shadow">
                         <h3 class="text-xl font-bold">${attr.name}</h3>
                         <p class="text-gray-700 mt-2">${attr.description}</p>
                         <p class="text-gray-700 mt-2"><strong>Location:</strong> ${attr.location}</p>
                         <p class="text-gray-700 mt-2"><strong>Rates:</strong> Citizens: ${attr.rates_citizens}</p>
+                        <div class="mt-2">
+                            <span class="avg-rating" id="avg-rating-${attractionId}">Average Rating: Loading...</span>
+                        </div>
+                        <div class="rating mt-2" id="rating-${attractionId}">
+                            <input type="radio" id="star5-${attractionId}" name="rating-${attractionId}" value="5" onchange="submitRating('${attr.name}', 5)">
+                            <label for="star5-${attractionId}">★</label>
+                            <input type="radio" id="star4-${attractionId}" name="rating-${attractionId}" value="4" onchange="submitRating('${attr.name}', 4)">
+                            <label for="star4-${attractionId}">★</label>
+                            <input type="radio" id="star3-${attractionId}" name="rating-${attractionId}" value="3" onchange="submitRating('${attr.name}', 3)">
+                            <label for="star3-${attractionId}">★</label>
+                            <input type="radio" id="star2-${attractionId}" name="rating-${attractionId}" value="2" onchange="submitRating('${attr.name}', 2)">
+                            <label for="star2-${attractionId}">★</label>
+                            <input type="radio" id="star1-${attractionId}" name="rating-${attractionId}" value="1" onchange="submitRating('${attr.name}', 1)">
+                            <label for="star1-${attractionId}">★</label>
+                        </div>
                         <div class="mt-4">
-                            <label for="visit-date-${attr.name.replace(/\s+/g, '-')}" class="block text-gray-700 font-bold mb-2">Visit Date</label>
-                            <input type="date" id="visit-date-${attr.name.replace(/\s+/g, '-')}" class="p-2 border rounded mr-2" min="${new Date().toISOString().split('T')[0]}" required>
-                            <button onclick="addToCalendar('${attr.name}', '${attr.location}')" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">Add to Google Calendar</button>
+                            <label for="visit-date-${attractionId}" class="block text-gray-700 font-bold mb-2">Visit Date</label>
+                            <input type="date" id="visit-date-${attractionId}" class="p-2 border rounded mr-2" min="${new Date().toISOString().split('T')[0]}" required>
+                            <button onclick="addToCalendar('${attr.name}', '${attr.location}')" class="bg-black text-white px-4 py-2 rounded hover:bg-orange-600">Add to Google Calendar</button>
                         </div>
                     </div>`;
                 carousel.innerHTML += `
@@ -391,10 +428,12 @@
                         <h3 class="text-lg font-bold">${attr.name}</h3>
                         <p class="text-gray-700">${attr.description.substring(0, 50)}...</p>
                     </div>`;
-                
+
+                // Fetch and display ratings
+                await fetchAttractionRatings(attr.name, attractionId);
+
                 let lat = attr.lat;
                 let lon = attr.lon;
-                console.log(`Attraction: ${attr.name}, Initial lat: ${lat}, lon: ${lon}`);
                 if ((lat === 0 && lon === 0) || (lat === null || lon === null)) {
                     const coords = locationCoordinates[attr.location.toLowerCase()];
                     if (coords) {
@@ -402,14 +441,10 @@
                         lon = coords.lon;
                     }
                 }
-                console.log(`Attraction: ${attr.name}, Final lat: ${lat}, lon: ${lon}`);
-
                 if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
                     const marker = L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map)
                         .bindPopup(`<b>${attr.name}</b><br>${attr.description}`);
                     bounds.push([parseFloat(lat), parseFloat(lon)]);
-                } else {
-                    console.warn(`Invalid or missing coordinates for attraction: ${attr.name}, lat: ${lat}, lon: ${lon}`);
                 }
             });
 
@@ -420,12 +455,50 @@
 
             if (bounds.length > 0) {
                 map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-            } else {
-                console.warn('No valid coordinates to fit bounds. Using default location.');
-                if (selectedLocation && locationCoordinates[selectedLocation]) {
-                    const { lat, lon } = locationCoordinates[selectedLocation];
-                    map.setView([lat, lon], 12);
+            }
+        }
+
+        // Fetch attraction ratings
+        async function fetchAttractionRatings(attractionName, attractionId) {
+            try {
+                const response = await fetch(`/get_attraction_ratings?attraction_name=${encodeURIComponent(attractionName)}`);
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const data = await response.json();
+
+                const avgRatingEl = document.getElementById(`avg-rating-${attractionId}`);
+                avgRatingEl.textContent = `Average Rating: ${data.average_rating} (${data.user_rating ? 'Your rating: ' + data.user_rating : 'Not rated yet'})`;
+
+                if (data.user_rating) {
+                    const radio = document.getElementById(`star${data.user_rating}-${attractionId}`);
+                    if (radio) radio.checked = true;
                 }
+            } catch (error) {
+                console.error(`Error fetching ratings for ${attractionName}:`, error);
+                document.getElementById(`avg-rating-${attractionId}`).textContent = 'Average Rating: N/A';
+            }
+        }
+
+        // Submit rating
+        async function submitRating(attractionName, rating) {
+            try {
+                const response = await fetch('/rate_attraction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ attraction_name: attractionName, rating: rating })
+                });
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const data = await response.json();
+
+                if (data.message) {
+                    alert(data.message);
+                    fetchAttractionRatings(attractionName, attractionName.replace(/\s+/g, '-'));
+                    if (data.gamification) updateGamificationUI(data.gamification);
+                } else {
+                    throw new Error(data.error || 'Failed to submit rating');
+                }
+            } catch (error) {
+                console.error('Error submitting rating:', error);
+                alert(`Error: ${error.message}`);
             }
         }
 

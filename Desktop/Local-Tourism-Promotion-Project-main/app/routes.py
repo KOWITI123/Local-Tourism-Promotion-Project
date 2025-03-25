@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, flash
 from flask_cors import CORS
-from flask_login import LoginManager, UserMixin, login_user, current_user
+from flask_login import LoginManager, UserMixin, login_user, current_user, login_required
 import requests
 from app.db_config import DB_CONFIG
 import psycopg2
@@ -629,6 +629,101 @@ def add_to_calendar():
     except Exception as e:
         print(f"Error creating event: {e}")
         return jsonify({"error": f"Failed to create event: {str(e)}"}), 500
+    
+# Submit a rating for an attraction
+@app.route('/rate_attraction', methods=['POST'])
+@login_required
+def rate_attraction():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    attraction_name = data.get('attraction_name')
+    rating = data.get('rating')
+    user_id = get_user_id()  # Reuse your existing function
+
+    if not attraction_name or not rating:
+        return jsonify({"error": "Missing attraction_name or rating"}), 400
+
+    try:
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            raise ValueError("Rating must be between 1 and 5")
+    except ValueError:
+        return jsonify({"error": "Invalid rating value. Must be an integer between 1 and 5"}), 400
+
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        cursor = connection.cursor()
+        query = """
+        INSERT INTO attraction_ratings (user_id, attraction_name, rating)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (user_id, attraction_name) 
+        DO UPDATE SET rating = EXCLUDED.rating, created_at = CURRENT_TIMESTAMP
+        """
+        cursor.execute(query, (user_id, attraction_name, rating))
+        connection.commit()
+        print(f"Rating {rating} saved for {attraction_name} by user {user_id}")
+        
+        # Award points for rating (optional gamification)
+        add_points(user_id, 5)  # 5 points for submitting a rating
+        stats = get_user_stats(user_id)
+        
+        return jsonify({"message": "Rating submitted successfully", "gamification": stats})
+    except Exception as e:
+        print(f"Error saving rating: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+# Get average rating and user's rating for an attraction
+@app.route('/get_attraction_ratings', methods=['GET'])
+@login_required
+def get_attraction_ratings():
+    attraction_name = request.args.get('attraction_name')
+    user_id = get_user_id()
+
+    if not attraction_name:
+        return jsonify({"error": "Missing attraction_name"}), 400
+
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        cursor = connection.cursor()
+        # Get user's rating
+        cursor.execute("""
+            SELECT rating FROM attraction_ratings 
+            WHERE user_id = %s AND attraction_name = %s
+        """, (user_id, attraction_name))
+        user_rating = cursor.fetchone()
+        user_rating = user_rating[0] if user_rating else None
+
+        # Get average rating
+        cursor.execute("""
+            SELECT AVG(rating) FROM attraction_ratings 
+            WHERE attraction_name = %s
+        """, (attraction_name,))
+        avg_rating = cursor.fetchone()[0]
+        avg_rating = float(avg_rating) if avg_rating else 0.0
+
+        return jsonify({
+            "attraction_name": attraction_name,
+            "user_rating": user_rating,
+            "average_rating": round(avg_rating, 1)  # Rounded to 1 decimal
+        })
+    except Exception as e:
+        print(f"Error fetching ratings: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
 # Routes for templates
 @app.route('/')
 def root():
