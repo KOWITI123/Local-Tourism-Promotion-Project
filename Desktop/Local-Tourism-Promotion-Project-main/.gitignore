@@ -20,3 +20,5 @@ dist/
 # Allow your project files
 !../Local-Tourism-Promotion-Project-main/
 .qodo
+
+client_secret.json

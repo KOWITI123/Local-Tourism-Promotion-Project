@@ -394,8 +394,10 @@ def auth0_login():
     print(f"Session contents after: {session}")
     return auth0.authorize_redirect(
         redirect_uri=redirect_uri,
-        nonce=nonce
+        nonce=nonce,
+        prompt='login select_account'  # Added to force account chooser
     )
+    
 
 @app.route('/auth0_signup')
 def auth0_signup():
@@ -405,12 +407,20 @@ def auth0_signup():
     import secrets
     nonce = secrets.token_urlsafe(16)
     session['nonce'] = nonce
+    session['signup_intent'] = True
+    
+    # Log out of Auth0 to clear any existing session
+    logout_url = f"https://{auth0_domain}/v2/logout?client_id={auth0_client_id}&returnTo={url_for('signup_page', _external=True)}"
+    requests.get(logout_url)  # Perform a logout request to Auth0
+    
     redirect_uri = url_for('auth0_callback', _external=True)
     print(f"Using redirect_uri: {redirect_uri}")
     print(f"Session contents after: {session}")
     return auth0.authorize_redirect(
         redirect_uri=redirect_uri,
-        nonce=nonce
+        nonce=nonce,
+        screen_hint='signup',          # Encourage signup screen
+        prompt='login select_account'  # Force re-authentication AND account chooser
     )
 
 @app.route('/auth0_callback')
@@ -437,8 +447,28 @@ def auth0_callback():
         print("Connecting to database...")
         connection = psycopg2.connect(**DB_CONFIG['auth_users'])
         cursor = connection.cursor()
+        
+        # Check if the user already exists with this email
+        cursor.execute("SELECT id, auth0_id FROM users WHERE email = %s", (email,))
+        existing_user = cursor.fetchone()
+        
+        signup_intent = session.pop('signup_intent', False)
+        print(f"Signup intent: {signup_intent}")
+        
+        if existing_user and existing_user[1] and not signup_intent:
+            # User exists with an Auth0 ID and this is a login attempt
+            print("Existing Auth0 user detected, proceeding with login")
+        elif not existing_user:
+            # No user exists, but this is a login attempt, so redirect to signup
+            cursor.close()
+            connection.close()
+            print("No user found for login, redirecting to signup")
+            flash('No account found with this email. Please sign up first.', 'error')
+            return redirect(url_for('signup_page'))
+        
+        # Proceed with login or update
         try:
-            print("Inserting user into database...")
+            print("Inserting or updating user in database...")
             cursor.execute("""
                 INSERT INTO users (email, auth0_id)
                 VALUES (%s, %s)
@@ -457,25 +487,32 @@ def auth0_callback():
 
         session['user'] = user_info
         session['user_id'] = user_id
-        flash('Login successful!', 'success')
+        flash('Login successful! Welcome back!', 'success' if not signup_intent else 'Sign up successful! Welcome!')
         return redirect(url_for('index'))
     except Exception as e:
         print(f"Error in Auth0 callback: {e}")
         import traceback
-        print("Stack trace:")
         print(traceback.format_exc())
-        flash('Failed to sign up with Google. Please try again.', 'error')
+        flash('Failed to sign in with Google. Please try again.', 'error')
         return redirect(url_for('signup_page'))
 
 @app.route('/logout')
 def logout():
     print("Handling /logout route...")
-    session.pop('user', None)
-    session.pop('email', None)
-    session.pop('user_id', None)
-    session.pop('google_credentials', None)
-    flash('You have been signed out.', 'success')
-    return redirect(url_for('login_page'))
+    # Clear Flask session for both manual and Auth0 logins
+    session.pop('user', None)      # Auth0 user info
+    session.pop('email', None)     # Manual login email
+    session.pop('user_id', None)   # User ID
+    session.pop('nonce', None)     # Auth0 nonce
+    session.pop('signup_intent', None)  # Signup intent flag
+    session.pop('google_credentials', None)  # Google Calendar credentials
+    
+    # Optional: Log out of Auth0 to clear its session
+    logout_url = f"https://{auth0_domain}/v2/logout?client_id={auth0_client_id}&returnTo={url_for('login_page', _external=True)}"
+    requests.get(logout_url)
+    
+    flash('You have been logged out successfully.', 'success')
+    return redirect(url_for('login_page'))    
 
 # Google OAuth 2.0 Routes (for Google Calendar)
 @app.route('/auth/google')
@@ -540,12 +577,6 @@ def google_callback():
         print(f"Error in Google callback: {e}")
         return redirect(url_for('tourist_filter', auth_error=str(e)))
 
-from flask import jsonify, request
-from flask_login import login_required
-from googleapiclient.discovery import build
-from googleapiclient.errors import UnknownApiNameOrVersion
-from google.oauth2.credentials import Credentials
-from datetime import datetime
 
 @app.route('/add_to_calendar', methods=['POST'])
 @login_required
