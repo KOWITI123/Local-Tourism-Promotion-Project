@@ -1,3 +1,4 @@
+<!-- sign_up.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,14 +8,10 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <style>
-        /* Custom styles for consistency */
-        body {
-            background-color: #F3F4F6; /* bg-gray-100 */
-        }
+        body { background-color: #F3F4F6; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
-    <!-- Sign Up Section -->
     <div class="flex items-center justify-center min-h-screen">
         <div class="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
             <div class="flex justify-center mb-6">
@@ -50,7 +47,6 @@
                 </button>
             </form>
 
-            <!-- Flash Messages -->
             {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
                 {% for category, message in messages %}
@@ -59,7 +55,6 @@
               {% endif %}
             {% endwith %}
 
-            <!-- Sign up with Google -->
             <div class="mt-6 text-center">
                 <a href="/auth0_signup" class="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-red-500">
                     <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -69,9 +64,9 @@
                 </a>
             </div>
 
-            <!-- Link to Sign In -->
             <div class="mt-4 text-center">
                 <p class="text-gray-600">Already have an account? <a href="/login" class="text-orange-500 hover:underline">Sign In</a></p>
+                <p class="text-gray-600 mt-2">Admin? <a href="/admin_login" class="text-orange-500 hover:underline">Admin Login</a></p>
             </div>
         </div>
     </div>

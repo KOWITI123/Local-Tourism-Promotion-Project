@@ -1,3 +1,4 @@
+import secrets
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, flash
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, current_user, login_required
@@ -22,6 +23,7 @@ import re
 from email_validator import validate_email, EmailNotValidError
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from functools import wraps
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import UnknownApiNameOrVersion
@@ -100,14 +102,32 @@ login_manager.init_app(app)
 login_manager.login_view = 'google_auth'  # Redirect to Google auth instead of /login
 
 class User(UserMixin):
-    def __init__(self, user_id):
+    def __init__(self, user_id, role='user'):
         self.id = user_id
+        self.role = role
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
-
-
+    connection = None
+    cursor = None
+    try:
+        connection = psycopg2.connect(**DB_CONFIG['auth_users'])
+        cursor = connection.cursor()
+        cursor.execute("SELECT id, role FROM users WHERE id = %s", (user_id,))
+        result = cursor.fetchone()
+        if result:
+            print(f"Loaded user: id={result[0]}, role={result[1]}")
+            return User(result[0], result[1] or 'user')
+        print(f"No user found for id={user_id}")
+        return None
+    except psycopg2.Error as e:
+        print(f"Error loading user: {e}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 # Validation functions (from app/auth.py)
 def validate_full_name(full_name):
@@ -179,16 +199,16 @@ def verify_user(email, password):
     try:
         connection = psycopg2.connect(**DB_CONFIG['auth_users'])
         cursor = connection.cursor()
-        cursor.execute("SELECT id, password_hash FROM users WHERE email = %s;", (email,))
+        cursor.execute("SELECT id, password_hash, role FROM users WHERE email = %s", (email,))
         result = cursor.fetchone()
         
         if result and bcrypt.checkpw(password.encode('utf-8'), result[1].encode('utf-8')):
             print(f"User {email} verified successfully.")
-            return True, result[0]  # Return user_id
-        return False, None
+            return True, result[0], result[2] or 'user'  # Return user_id and role
+        return False, None, None
     except psycopg2.Error as e:
         print(f"Error verifying user: {e}")
-        return False, None
+        return False, None, None
     finally:
         if cursor:
             cursor.close()
@@ -316,6 +336,17 @@ def login_required(f):
     wrap.__name__ = f.__name__
     return wrap
 
+def admin_required(f):
+    @wraps(f)
+    @login_required
+    def decorated_function(*args, **kwargs):
+        print(f"Checking admin access: is_authenticated={current_user.is_authenticated}, role={getattr(current_user, 'role', 'None')}, user_id={getattr(current_user, 'id', 'None')}")
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            flash('You must be an admin to access this page.', 'error')
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # Authentication Routes (from app/auth.py)
 @app.route('/login', methods=['GET'])
 def login_page():
@@ -328,10 +359,12 @@ def login():
     email = request.form['email']
     password = request.form['password']
     
-    success, user_id = verify_user(email, password)
+    success, user_id, role = verify_user(email, password)
     if success:
         session['email'] = email
         session['user_id'] = user_id
+        user = User(user_id, role)  # Pass role to User
+        login_user(user)
         flash('Login successful!', 'success')
         return redirect(url_for('index'))
     else:
@@ -381,21 +414,35 @@ def register():
         flash('Registration failed. Email might already exist.', 'error')
         return redirect(url_for('signup_page'))
 
+
 @app.route('/auth0_login')
 def auth0_login():
     print("Handling /auth0_login route...")
     print(f"Session type in /auth0_login: {type(session)}")
     print(f"Session contents before: {session}")
     import secrets
+
+    # Only clear session if starting fresh
+    if 'nonce' not in session or 'user' not in session:
+        session.clear()
+
     nonce = secrets.token_urlsafe(16)
     session['nonce'] = nonce
     redirect_uri = url_for('auth0_callback', _external=True)
+    
+    referrer = request.referrer or ''
+    if 'admin_login' in referrer:
+        session['login_destination'] = 'admin'
+        print("Set login_destination to 'admin'")
+    
     print(f"Using redirect_uri: {redirect_uri}")
     print(f"Session contents after: {session}")
     return auth0.authorize_redirect(
         redirect_uri=redirect_uri,
         nonce=nonce,
-        prompt='login select_account'  # Added to force account chooser
+        prompt='login select_account',  # Force login and account chooser
+        login_hint=None,
+        max_age=0
     )
     
 
@@ -427,74 +474,320 @@ def auth0_signup():
 def auth0_callback():
     print("Handling /auth0_callback route...")
     try:
-        print("Attempting to authorize access token...")
         token = auth0.authorize_access_token()
-        print("Access token received:", token)
-        
-        print("Parsing ID token...")
         nonce = session.get('nonce')
-        print(f"Retrieved nonce from session: {nonce}")
         if not nonce:
-            raise ValueError("Nonce not found in session. Ensure it was set during authorize_redirect.")
-        
+            raise ValueError("Nonce not found in session.")
         user_info = auth0.parse_id_token(token, nonce=nonce)
-        print("User info:", user_info)
-        
         auth0_id = user_info['sub']
         email = user_info['email']
         print(f"Auth0 ID: {auth0_id}, Email: {email}")
 
-        print("Connecting to database...")
         connection = psycopg2.connect(**DB_CONFIG['auth_users'])
         cursor = connection.cursor()
         
-        # Check if the user already exists with this email
-        cursor.execute("SELECT id, auth0_id FROM users WHERE email = %s", (email,))
+        cursor.execute("SELECT id, role FROM users WHERE email = %s", (email,))
         existing_user = cursor.fetchone()
         
-        signup_intent = session.pop('signup_intent', False)
-        print(f"Signup intent: {signup_intent}")
-        
-        if existing_user and existing_user[1] and not signup_intent:
-            # User exists with an Auth0 ID and this is a login attempt
-            print("Existing Auth0 user detected, proceeding with login")
-        elif not existing_user:
-            # No user exists, but this is a login attempt, so redirect to signup
-            cursor.close()
-            connection.close()
-            print("No user found for login, redirecting to signup")
-            flash('No account found with this email. Please sign up first.', 'error')
-            return redirect(url_for('signup_page'))
-        
-        # Proceed with login or update
-        try:
-            print("Inserting or updating user in database...")
+        if existing_user:
+            user_id, role = existing_user
+            if role != 'admin' and 'signup' in (request.referrer or ''):
+                cursor.close()
+                connection.close()
+                flash('This email is already registered. Please sign in instead.', 'error')
+                return redirect(url_for('login_page'))
+        else:
             cursor.execute("""
-                INSERT INTO users (email, auth0_id)
-                VALUES (%s, %s)
-                ON CONFLICT (email) DO UPDATE SET auth0_id = EXCLUDED.auth0_id
-                RETURNING id
+                INSERT INTO users (email, auth0_id, role)
+                VALUES (%s, %s, 'user')
+                RETURNING id, role
             """, (email, auth0_id))
-            user_id = cursor.fetchone()[0]
+            user_id, role = cursor.fetchone()
             connection.commit()
-            print(f"Auth0 user {email} saved successfully with user_id: {user_id}.")
-        except psycopg2.Error as e:
-            print(f"Error saving user to database: {e}")
-            raise
-        finally:
-            cursor.close()
-            connection.close()
+            print(f"Auth0 user {email} saved with user_id: {user_id}, role: {role}.")
+        
+        cursor.close()
+        connection.close()
 
         session['user'] = user_info
-        session['user_id'] = user_id
-        flash('Login successful! Welcome back!', 'success' if not signup_intent else 'Sign up successful! Welcome!')
-        return redirect(url_for('index'))
+        session['user_id'] = str(user_id)
+        user = User(user_id, role)
+        login_user(user, remember=True)
+        print(f"User logged in: id={user_id}, role={role}")
+        
+        login_destination = session.pop('login_destination', None)
+        if role == 'admin' and login_destination == 'admin':
+            flash('Admin login successful!', 'success')
+            return redirect(url_for('admin_page'))  # Changed to admin_page
+        else:
+            flash('Login successful!', 'success')
+            return redirect(url_for('index'))
+
     except Exception as e:
         print(f"Error in Auth0 callback: {e}")
         import traceback
         print(traceback.format_exc())
         flash('Failed to sign in with Google. Please try again.', 'error')
-        return redirect(url_for('signup_page'))
+        return redirect(url_for('login_page'))
+    
+# Admin login POST
+@app.route('/admin_login', methods=['GET', 'POST'])
+def admin_login():
+    print("Handling /admin_login route...")
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        
+        success, user_id, role = verify_user(email, password)
+        if success and role == 'admin':
+            session['email'] = email
+            session['user_id'] = str(user_id)
+            user = User(user_id, role)
+            login_user(user, remember=True)
+            flash('Admin login successful!', 'success')
+            return redirect(url_for('admin_page'))  # Changed to admin_page
+        else:
+            flash('Invalid admin credentials or not an admin account.', 'error')
+            return redirect(url_for('admin_login'))
+    return render_template('admin_login.html')
+
+# Admin dashboard route
+@app.route('/admin_page')
+@admin_required
+def admin_page():
+    print("Handling /admin_page route...")
+    connection = create_connection()  # Use 'kenya_tourism' DB for attractions
+    if not connection:
+        return render_template('admin.html', total_users=0, active_sessions=0, content_items=0, users=[])
+    
+    try:
+        cursor = connection.cursor()
+        # Total users from auth_users DB
+        auth_conn = psycopg2.connect(**DB_CONFIG['auth_users'])
+        auth_cursor = auth_conn.cursor()
+        auth_cursor.execute("SELECT COUNT(*) FROM users;")
+        total_users = auth_cursor.fetchone()[0]
+        
+        # Active sessions (simplified as users with is_active = TRUE)
+        auth_cursor.execute("SELECT COUNT(*) FROM users WHERE is_active = TRUE;")
+        active_sessions = auth_cursor.fetchone()[0]
+        
+        # Content items from attractions table
+        cursor.execute("SELECT COUNT(*) FROM attractions;")
+        content_items = cursor.fetchone()[0]
+        
+        # Fetch user list
+        auth_cursor.execute("SELECT id, full_name, email FROM users LIMIT 10;")
+        users = [{'id': row[0], 'full_name': row[1], 'email': row[2]} for row in auth_cursor.fetchall()]
+
+        # Fetch attractions
+        cursor.execute("SELECT id, name, location FROM attractions LIMIT 10;")
+        attractions = [{'id': row[0], 'name': row[1], 'location': row[2]} for row in cursor.fetchall()]
+        
+    finally:
+        cursor.close()
+        connection.close()
+        auth_cursor.close()
+        auth_conn.close()
+    
+    return render_template('admin.html', total_users=total_users, active_sessions=active_sessions, content_items=content_items, users=users, attractions=attractions)
+
+# Admin add user
+@app.route('/admin/add_user', methods=['POST'])
+@admin_required
+def admin_add_user():
+    full_name = request.form['full_name']
+    email = request.form['email']
+    password = request.form['password']
+    
+    success, user_id = insert_user(full_name, email, '', password)  # Phone is optional
+    if success:
+        flash('User added successfully!', 'success')
+    else:
+        flash('Failed to add user.', 'error')
+    return redirect(url_for('admin_page'))
+
+# Admin delete user
+@app.route('/admin/delete_user/<int:user_id>')
+@admin_required
+def admin_delete_user(user_id):
+    connection = psycopg2.connect(**DB_CONFIG['auth_users'])
+    if connection:
+        try:
+            cursor = connection.cursor()
+            cursor.execute("DELETE FROM users WHERE id = %s AND role != 'admin';", (user_id,))  # Prevent deleting admins
+            connection.commit()
+            if cursor.rowcount > 0:
+                flash('User deleted successfully!', 'success')
+            else:
+                flash('User not found or is an admin.', 'error')
+        except Exception as e:
+            flash(f'Error deleting user: {e}', 'error')
+        finally:
+            cursor.close()
+            connection.close()
+    return redirect(url_for('admin_page'))
+
+@app.route('/admin/edit_user/<int:user_id>', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_user(user_id):
+    connection = psycopg2.connect(**DB_CONFIG['auth_users'])
+    cursor = connection.cursor()
+    
+    if request.method == 'POST':
+        full_name = request.form['full_name']
+        email = request.form['email']
+        password = request.form.get('password', '')  # Optional
+        
+        try:
+            if password:
+                password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                cursor.execute("""
+                    UPDATE users SET full_name = %s, email = %s, password_hash = %s
+                    WHERE id = %s AND role != 'admin';
+                """, (full_name, email, password_hash, user_id))
+            else:
+                cursor.execute("""
+                    UPDATE users SET full_name = %s, email = %s
+                    WHERE id = %s AND role != 'admin';
+                """, (full_name, email, user_id))
+            connection.commit()
+            if cursor.rowcount > 0:
+                flash('User updated successfully!', 'success')
+            else:
+                flash('User not found or is an admin.', 'error')
+        except Exception as e:
+            flash(f'Error updating user: {e}', 'error')
+        finally:
+            cursor.close()
+            connection.close()
+        return redirect(url_for('admin_page'))
+    
+    # GET: Fetch user data
+    try:
+        cursor.execute("SELECT full_name, email FROM users WHERE id = %s AND role != 'admin';", (user_id,))
+        user = cursor.fetchone()
+        if user:
+            return render_template('edit_user.html', user={'id': user_id, 'full_name': user[0], 'email': user[1]})
+        flash('User not found or is an admin.', 'error')
+        return redirect(url_for('admin_page'))
+    finally:
+        cursor.close()
+        connection.close()
+
+# Admin add content (simplified, assumes attractions table)
+@app.route('/admin/add_content', methods=['POST'])
+@admin_required
+def admin_add_content():
+    name = request.form['name']
+    location = request.form['location']
+    description = request.form['description']
+    activities = request.form['activities']
+    best_time_to_visit = request.form['best_time_to_visit']
+    rates_citizens = request.form['rates_citizens']
+    rates_residents = request.form['rates_residents']
+    rates_non_residents = request.form['rates_non_residents']
+    latitude = float(request.form['latitude'])
+    longitude = float(request.form['longitude'])
+    
+    connection = create_connection()
+    if connection:
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+                INSERT INTO attractions (name, location, description, activities, best_time_to_visit, 
+                                        rates_citizens, rates_residents, rates_non_residents, latitude, longitude)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (name, location, description, activities, best_time_to_visit, rates_citizens, 
+                  rates_residents, rates_non_residents, latitude, longitude))
+            connection.commit()
+            flash('Attraction added successfully!', 'success')
+        except Exception as e:
+            flash(f'Error adding attraction: {e}', 'error')
+        finally:
+            cursor.close()
+            connection.close()
+    return redirect(url_for('admin_page'))
+
+@app.route('/admin/edit_attraction/<int:attraction_id>', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_attraction(attraction_id):
+    connection = create_connection()
+    cursor = connection.cursor()
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        location = request.form['location']
+        description = request.form['description']
+        activities = request.form['activities']
+        best_time_to_visit = request.form['best_time_to_visit']
+        rates_citizens = request.form['rates_citizens']
+        rates_residents = request.form['rates_residents']
+        rates_non_residents = request.form['rates_non_residents']
+        latitude = float(request.form['latitude'])
+        longitude = float(request.form['longitude'])
+        
+        try:
+            cursor.execute("""
+                UPDATE attractions 
+                SET name = %s, location = %s, description = %s, activities = %s, best_time_to_visit = %s,
+                    rates_citizens = %s, rates_residents = %s, rates_non_residents = %s, latitude = %s, longitude = %s
+                WHERE id = %s;
+            """, (name, location, description, activities, best_time_to_visit, rates_citizens, 
+                  rates_residents, rates_non_residents, latitude, longitude, attraction_id))
+            connection.commit()
+            if cursor.rowcount > 0:
+                flash('Attraction updated successfully!', 'success')
+            else:
+                flash('Attraction not found.', 'error')
+        except Exception as e:
+            flash(f'Error updating attraction: {e}', 'error')
+        finally:
+            cursor.close()
+            connection.close()
+        return redirect(url_for('admin_page'))
+    
+    # GET: Fetch attraction data
+    try:
+        cursor.execute("""
+            SELECT id, name, location, description, activities, best_time_to_visit, 
+                   rates_citizens, rates_residents, rates_non_residents, latitude, longitude 
+            FROM attractions WHERE id = %s;
+        """, (attraction_id,))
+        attraction = cursor.fetchone()
+        if attraction:
+            attraction_data = {
+                'id': attraction[0], 'name': attraction[1], 'location': attraction[2], 
+                'description': attraction[3], 'activities': attraction[4], 'best_time_to_visit': attraction[5],
+                'rates_citizens': attraction[6], 'rates_residents': attraction[7], 
+                'rates_non_residents': attraction[8], 'latitude': attraction[9], 'longitude': attraction[10]
+            }
+            return render_template('edit_attraction.html', attraction=attraction_data)
+        flash('Attraction not found.', 'error')
+        return redirect(url_for('admin_page'))
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/admin/delete_attraction/<int:attraction_id>')
+@admin_required
+def admin_delete_attraction(attraction_id):
+    connection = create_connection()
+    if connection:
+        try:
+            cursor = connection.cursor()
+            cursor.execute("DELETE FROM attractions WHERE id = %s;", (attraction_id,))
+            connection.commit()
+            if cursor.rowcount > 0:
+                flash('Attraction deleted successfully!', 'success')
+            else:
+                flash('Attraction not found.', 'error')
+        except Exception as e:
+            flash(f'Error deleting attraction: {e}', 'error')
+        finally:
+            cursor.close()
+            connection.close()
+    return redirect(url_for('admin_page'))
 
 @app.route('/logout')
 def logout():
@@ -506,6 +799,7 @@ def logout():
     session.pop('nonce', None)     # Auth0 nonce
     session.pop('signup_intent', None)  # Signup intent flag
     session.pop('google_credentials', None)  # Google Calendar credentials
+    session.pop('is_admin', None)  # Clear admin status
     
     # Optional: Log out of Auth0 to clear its session
     logout_url = f"https://{auth0_domain}/v2/logout?client_id={auth0_client_id}&returnTo={url_for('login_page', _external=True)}"
@@ -766,6 +1060,7 @@ def root():
 @login_required
 def index():
     return render_template('index.html')
+
 
 @app.route('/about')
 @login_required

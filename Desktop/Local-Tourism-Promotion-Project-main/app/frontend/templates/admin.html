@@ -1,0 +1,163 @@
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pori - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #F3F4F6; }
+        .content-section { margin-top: 100px; }
+        .dashboard-card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full bg-white shadow-md z-10">
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center">
+                <span class="text-yellow-400 text-2xl mr-4">🌞</span>
+                <span class="text-xl font-bold">Pori Admin</span>
+            </div>
+            <div class="space-x-4">
+                <a href="/admin" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                <a href="/logout" class="text-gray-600 hover:text-gray-900">Sign Out</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Section -->
+    <div class="content-section">
+        <div class="container mx-auto px-4 py-10">
+            <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">Admin Dashboard</h1>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="dashboard-card">
+                    <h2 class="text-2xl font-bold text-gray-800">Total Users</h2>
+                    <p class="text-3xl text-orange-500 mt-2">{{ total_users }}</p>
+                </div>
+                <div class="dashboard-card">
+                    <h2 class="text-2xl font-bold text-gray-800">Active Sessions</h2>
+                    <p class="text-3xl text-orange-500 mt-2">{{ active_sessions }}</p>
+                </div>
+                <div class="dashboard-card">
+                    <h2 class="text-2xl font-bold text-gray-800">Content Items</h2>
+                    <p class="text-3xl text-orange-500 mt-2">{{ content_items }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Section -->
+    <div class="content-section">
+        <div class="container mx-auto px-4 py-10">
+            <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">User Management</h2>
+            <div class="dashboard-card">
+                <form action="/admin/add_user" method="POST" class="space-y-4">
+                    <div>
+                        <label for="full_name" class="block text-gray-700">Full Name</label>
+                        <input type="text" id="full_name" name="full_name" class="w-full px-4 py-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="email" class="block text-gray-700">Email</label>
+                        <input type="email" id="email" name="email" class="w-full px-4 py-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="password" class="block text-gray-700">Password</label>
+                        <input type="password" id="password" name="password" class="w-full px-4 py-2 border rounded-md" required>
+                    </div>
+                    <button type="submit" class="bg-black text-white px-4 py-2 rounded-md hover:bg-orange-600">Add User</button>
+                </form>
+                <div class="mt-6">
+                    <h3 class="text-xl font-bold text-gray-800">Existing Users</h3>
+                    <ul class="mt-2">
+                        {% for user in users %}
+                            <li class="flex justify-between items-center py-2 border-b">
+                                <span>{{ user.full_name }} ({{ user.email }})</span>
+                                <div>
+                                    <a href="/admin/edit_user/{{ user.id }}" class="text-orange-500 hover:underline">Edit</a>
+                                    <a href="/admin/delete_user/{{ user.id }}" class="text-red-500 hover:underline ml-4">Delete</a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Management Section -->
+<div class="content-section">
+    <div class="container mx-auto px-4 py-10">
+        <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Content Management</h2>
+        <div class="dashboard-card">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Add New Attraction</h3>
+            <form action="/admin/add_content" method="POST" class="space-y-4">
+                <div>
+                    <label for="name" class="block text-gray-700">Name</label>
+                    <input type="text" id="name" name="name" class="w-full px-4 py-2 border rounded-md" required>
+                </div>
+                <div>
+                    <label for="location" class="block text-gray-700">Location</label>
+                    <input type="text" id="location" name="location" class="w-full px-4 py-2 border rounded-md" required>
+                </div>
+                <div>
+                    <label for="description" class="block text-gray-700">Description</label>
+                    <textarea id="description" name="description" class="w-full px-4 py-2 border rounded-md" rows="4" required></textarea>
+                </div>
+                <div>
+                    <label for="activities" class="block text-gray-700">Activities (comma-separated)</label>
+                    <input type="text" id="activities" name="activities" class="w-full px-4 py-2 border rounded-md" placeholder="e.g., Hiking, Safari, Bird Watching" required>
+                </div>
+                <div>
+                    <label for="best_time_to_visit" class="block text-gray-700">Best Time to Visit</label>
+                    <input type="text" id="best_time_to_visit" name="best_time_to_visit" class="w-full px-4 py-2 border rounded-md" placeholder="e.g., June - October" required>
+                </div>
+                <div>
+                    <label for="rates_citizens" class="block text-gray-700">Rates for Citizens (Ksh)</label>
+                    <input type="text" id="rates_citizens" name="rates_citizens" class="w-full px-4 py-2 border rounded-md" placeholder="e.g., Ksh 500" required>
+                </div>
+                <div>
+                    <label for="rates_residents" class="block text-gray-700">Rates for Residents (Ksh)</label>
+                    <input type="text" id="rates_residents" name="rates_residents" class="w-full px-4 py-2 border rounded-md" placeholder="e.g., Ksh 1000" required>
+                </div>
+                <div>
+                    <label for="rates_non_residents" class="block text-gray-700">Rates for Non-Residents (Ksh)</label>
+                    <input type="text" id="rates_non_residents" name="rates_non_residents" class="w-full px-4 py-2 border rounded-md" placeholder="e.g., Ksh 2000" required>
+                </div>
+                <div>
+                    <label for="latitude" class="block text-gray-700">Latitude</label>
+                    <input type="number" step="any" id="latitude" name="latitude" class="w-full px-4 py-2 border rounded-md" placeholder="e.g., -1.2921" required>
+                </div>
+                <div>
+                    <label for="longitude" class="block text-gray-700">Longitude</label>
+                    <input type="number" step="any" id="longitude" name="longitude" class="w-full px-4 py-2 border rounded-md" placeholder="e.g., 36.8219" required>
+                </div>
+                <button type="submit" class="bg-black text-white px-4 py-2 rounded-md hover:bg-orange-600">Add Attraction</button>
+            </form>
+
+            <!-- Existing Attractions -->
+            <div class="mt-6">
+                <h3 class="text-xl font-bold text-gray-800">Existing Attractions</h3>
+                <ul class="mt-2">
+                    {% for attraction in attractions %}
+                        <li class="flex justify-between items-center py-2 border-b">
+                            <span>{{ attraction.name }} ({{ attraction.location }})</span>
+                            <div>
+                                <a href="/admin/edit_attraction/{{ attraction.id }}" class="text-orange-500 hover:underline">Edit</a>
+                                <a href="/admin/delete_attraction/{{ attraction.id }}" class="text-red-500 hover:underline ml-4">Delete</a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Footer -->
+    <footer class="container mx-auto px-4 py-10 text-gray-600 text-center">
+        <p>© 2025 Pori Admin. All rights reserved.</p>
+    </footer>
+</body>
+</html>
